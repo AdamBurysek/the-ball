@@ -1,95 +1,154 @@
-import Image from "next/image";
+"use client";
+import { Canvas, useFrame, useLoader } from "@react-three/fiber";
 import styles from "./page.module.css";
+import { useEffect, useRef, useState } from "react";
+import { Mesh, TextureLoader } from "three";
+import { OrbitControls } from "@react-three/drei";
+import { motion } from "framer-motion";
 
 export default function Home() {
+  const [scene, setScene] = useState<string>("ball");
+
   return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+    <div className={styles.container}>
+      <motion.span
+        animate={{ opacity: 1 }}
+        initial={{ opacity: 0 }}
+        transition={{ duration: 1 }}
+      >
+        <Canvas
+          className={styles.canvas}
+          camera={{ fov: 45, near: 0.1, far: 100, position: [0, 0, 4] }}
+          dpr={2}
 
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
+          // style={{ width: "100vw", height: "100vw" }}
+        >
+          <OrbitControls
+            enableZoom={false}
+            enablePan={false}
+            autoRotate={true}
+            autoRotateSpeed={scene === "ball" ? 5 : 0.3}
+          />
+          <pointLight
+            color={"#fff"}
+            distance={100}
+            intensity={scene === "ball" ? 200 : 800}
+            position={[0, 10, 10]}
+          />
+          {scene === "ball" ? <Ball /> : <Earth />}
+        </Canvas>
+      </motion.span>
+      <motion.nav
+        className={styles.navbar}
+        animate={{ y: 0 }}
+        initial={{ y: "-100%" }}
+        transition={{ duration: 1, delay: 1 }}
+      >
+        <a href="https://adamplanet.cz/adamcode/">The Ball</a>
+        <ul>
+          <li>
+            <button onClick={() => setScene("ball")}>Ball</button>
+          </li>
+          <li>
+            <button onClick={() => setScene("earth")}>Earth</button>
+          </li>
+        </ul>
+      </motion.nav>
+      <motion.h1
+        className={styles.title}
+        animate={{ opacity: 1 }}
+        initial={{ opacity: 0 }}
+        transition={{ duration: 2, delay: 2.5 }}
+      >
+        Give it a spin
+      </motion.h1>
+    </div>
+  );
+}
+
+function Ball() {
+  const mesh = useRef<Mesh>(null);
+  const [color, setColor] = useState("rgb(80,125,150)");
+
+  useEffect(() => {
+    let mouseDown = false;
+
+    const manageMouseDown = () => (mouseDown = true);
+    const manageMouseUp = () => (mouseDown = false);
+
+    const manageMouseMove = (e: MouseEvent) => {
+      if (!mouseDown) return;
+      const { innerWidth, innerHeight } = window;
+      const { clientX, clientY } = e;
+      setColor(
+        `rgb(${Math.round((clientX / innerWidth) * 255)},${Math.round(
+          (clientY / innerHeight) * 255
+        )},150)`
+      );
+    };
+
+    window.addEventListener("mousedown", manageMouseDown);
+    window.addEventListener("mouseup", manageMouseUp);
+    window.addEventListener("mousemove", manageMouseMove);
+
+    return () => {
+      window.removeEventListener("mousemove", manageMouseMove);
+      window.removeEventListener("mousedown", manageMouseDown);
+      window.removeEventListener("mouseup", manageMouseUp);
+    };
+  }, []);
+
+  return (
+    <mesh ref={mesh}>
+      <sphereGeometry args={[1, 64, 64]} />
+      <meshStandardMaterial color={color} />
+    </mesh>
+  );
+}
+
+function Earth() {
+  const earthRef = useRef<Mesh>(null);
+  const cloudsRef = useRef<Mesh>(null);
+
+  useFrame((state, delta) => {
+    if (earthRef.current) {
+      earthRef.current.rotation.x += delta * 0.1;
+      earthRef.current.rotation.y += delta * 0.1;
+      earthRef.current.rotation.z += delta * 0;
+    }
+  });
+
+  useFrame((state, delta) => {
+    if (cloudsRef.current) {
+      cloudsRef.current.rotation.x += delta * 0.11;
+      cloudsRef.current.rotation.y += delta * 0.11;
+      cloudsRef.current.rotation.z += delta * 0;
+    }
+  });
+
+  const earthDay = useLoader(TextureLoader, "2k_earth_daymap.jpg");
+  const earthNight = useLoader(TextureLoader, "2k_earth_nightmap.jpg");
+  const clouds = useLoader(TextureLoader, "2k_earth_clouds.jpg");
+  return (
+    <>
+      <mesh ref={earthRef}>
+        <sphereGeometry args={[1, 64, 64]} />
+        <meshLambertMaterial
+          emissive={0x000000}
+          color={0xffffff}
+          map={earthDay}
         />
-      </div>
+      </mesh>
 
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+      <mesh ref={cloudsRef}>
+        <sphereGeometry args={[1.03, 64, 64]} />
+        <meshLambertMaterial
+          map={clouds}
+          opacity={0.1}
+          transparent={true}
+          depthWrite={false}
+        />
+      </mesh>
+    </>
   );
 }
