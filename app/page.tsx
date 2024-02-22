@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 
 export default function Home() {
   const [scene, setScene] = useState<string>("ball");
+  const [isDay, setIsDay] = useState<boolean>(true);
 
   return (
     <div className={styles.container}>
@@ -35,7 +36,7 @@ export default function Home() {
             intensity={scene === "ball" ? 200 : 800}
             position={[0, 10, 10]}
           />
-          {scene === "ball" ? <Ball /> : <Earth />}
+          {scene === "ball" ? <Ball /> : <Earth isDay={isDay} />}
         </Canvas>
       </motion.span>
       <motion.nav
@@ -45,13 +46,28 @@ export default function Home() {
         transition={{ duration: 1, delay: 1 }}
       >
         <a href="https://adamplanet.cz/adamcode/">The Ball</a>
-        <ul>
+        <ul className={styles.sceneSwitch}>
           <li>
             <button onClick={() => setScene("ball")}>Ball</button>
           </li>
           <li>
             <button onClick={() => setScene("earth")}>Earth</button>
           </li>
+          <motion.ul
+            className={styles.earthButtons}
+            animate={
+              scene === "ball" ? { x: 1000, opacity: 1 } : { x: 0, opacity: 1 }
+            }
+            initial={{ x: 1000, opacity: 0 }}
+            transition={{ duration: 1 }}
+          >
+            <li>
+              <button onClick={() => setIsDay(true)}>Day</button>
+            </li>
+            <li>
+              <button onClick={() => setIsDay(false)}>Night</button>
+            </li>
+          </motion.ul>
         </ul>
       </motion.nav>
       <motion.h1
@@ -76,10 +92,10 @@ function Ball() {
     const manageMouseDown = () => (mouseDown = true);
     const manageMouseUp = () => (mouseDown = false);
 
-    const manageMouseMove = (e: MouseEvent) => {
+    const manageMouseMove = (e: any) => {
       if (!mouseDown) return;
       const { innerWidth, innerHeight } = window;
-      const { clientX, clientY } = e;
+      const { clientX, clientY } = e.touches ? e.touches[0] : e;
       setColor(
         `rgb(${Math.round((clientX / innerWidth) * 255)},${Math.round(
           (clientY / innerHeight) * 255
@@ -91,10 +107,18 @@ function Ball() {
     window.addEventListener("mouseup", manageMouseUp);
     window.addEventListener("mousemove", manageMouseMove);
 
+    window.addEventListener("touchstart", manageMouseDown);
+    window.addEventListener("touchend", manageMouseUp);
+    window.addEventListener("touchmove", manageMouseMove);
+
     return () => {
       window.removeEventListener("mousemove", manageMouseMove);
       window.removeEventListener("mousedown", manageMouseDown);
       window.removeEventListener("mouseup", manageMouseUp);
+
+      window.removeEventListener("touchmove", manageMouseMove);
+      window.removeEventListener("touchstart", manageMouseDown);
+      window.removeEventListener("touchend", manageMouseUp);
     };
   }, []);
 
@@ -106,7 +130,7 @@ function Ball() {
   );
 }
 
-function Earth() {
+function Earth(props: any) {
   const earthRef = useRef<Mesh>(null);
   const cloudsRef = useRef<Mesh>(null);
 
@@ -136,7 +160,7 @@ function Earth() {
         <meshLambertMaterial
           emissive={0x000000}
           color={0xffffff}
-          map={earthDay}
+          map={props.isDay ? earthDay : earthNight}
         />
       </mesh>
 

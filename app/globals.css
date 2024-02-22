@@ -24,3 +24,7 @@ a {
   color: var(--color-white);
   text-decoration: none;
 }
+
+ul {
+  list-style: none;
+}
